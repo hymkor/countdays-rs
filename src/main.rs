@@ -1,5 +1,4 @@
-
-fn uru(y: i32) -> bool {
+fn is_uruu(y: i32) -> bool {
     if y % 2000 == 0 {
         return true
     } else if y % 100 == 0 {
@@ -14,7 +13,7 @@ fn uru(y: i32) -> bool {
 fn years_to_days(y1: i32,y2: i32) -> i32 {
     let mut sum: i32 = 0;
     for y in y1..y2 {
-        if uru(y) {
+        if is_uruu(y) {
             sum += 366
         } else {
             sum += 365
@@ -27,7 +26,7 @@ fn month_to_days(m: i32,y: i32) -> i32 {
     let mut sum: i32 = 0;
     for i in 1..m {
         sum += match i {
-            2 => if uru(y) { 29 } else { 28 },
+            2 => if is_uruu(y) { 29 } else { 28 },
             4|6|9|11 => 30,
             _ => 31,
         };
@@ -35,20 +34,15 @@ fn month_to_days(m: i32,y: i32) -> i32 {
     return sum
 }
 
-fn count_date(dt: &str) -> Result<i32,String> {
-    let year: i32 = match dt[..4].parse() {
-        Ok(y) => years_to_days(2000,y),
-        Err(_) => return Err(format!("Parse Error: year: {}",&dt[0..4]))
-    };
-    let month: i32 = match dt[4..6].parse() {
-        Ok(m) => month_to_days(m,year),
-        Err(_) => return Err(format!("Parse Error: month: {}",&dt[4..6]))
-    };
-    let day: i32 = match dt[6..].parse() {
-        Ok(d) => d,
-        Err(_) => return Err(format!("Parse Error: day: {}",&dt[6..]))
-    };
-    return Ok(year+month+day);
+fn count_days(y: i32,m: i32,d: i32) -> i32 {
+    return years_to_days(2000,y) + month_to_days(m,y) + d
+}
+
+fn yyyymmdd_to_days(dt: &str) -> Result<i32,std::num::ParseIntError> {
+    let year: i32 = dt[..4].parse()?;
+    let month: i32 = dt[4..6].parse()?;
+    let day: i32 = dt[6..].parse()?;
+    return Ok(count_days(year,month,day));
 }
 
 #[cfg(test)]
@@ -56,9 +50,9 @@ mod tests {
     use super::*;
 
     fn try_test(d1: &str, d2: &str, diff: i32) -> bool{
-        if let Ok(d1) = count_date(d1) {
-            if let Ok(d2) = count_date(d2) {
-                return d2 - d1 == diff;
+        if let Ok(_d1) = yyyymmdd_to_days(d1) {
+            if let Ok(_d2) = yyyymmdd_to_days(d2) {
+                return _d2 - _d1 == diff;
             }
         }
         return false;
@@ -76,14 +70,13 @@ mod tests {
 fn main() {
     let mut last: Option<i32> = None;
     for arg1 in std::env::args().skip(1){
-        match count_date(&arg1) {
-            Ok(days) => match last {
-                None => { last = Some(days) },
-                Some(_last) => {
-                    println!("{}",days-_last);
-                    last = Some(days);
-                },
-            },
+        match yyyymmdd_to_days(&arg1) {
+            Ok(_days) => {
+                if let Some(_last) = last {
+                    println!("{}",_days-_last);
+                }
+                last = Some(_days)
+            }
             Err(errmsg) => {
                 eprintln!("Error: {}",errmsg);
                 std::process::exit(1);
